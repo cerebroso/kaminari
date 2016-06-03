@@ -2,30 +2,23 @@ require 'kaminari/models/mongoid_criteria_methods'
 
 module Kaminari
   module MongoidExtension
-    module Criteria
-      extend ActiveSupport::Concern
-
-      included do
-        class_eval <<-RUBY, __FILE__, __LINE__ + 1
-          def #{Kaminari.config.page_method_name}(*args)
-            super(*args).criteria.merge(self)
-          end
-        RUBY
-      end
-    end
-
     module Document
       extend ActiveSupport::Concern
       include Kaminari::ConfigurationMethods
 
       included do
-        # Fetch the values at the specified page number
-        #   Model.page(5)
         scope Kaminari.config.page_method_name, Proc.new {|num|
-          limit(default_per_page).offset(default_per_page * ([num.to_i, 1].max - 1))
+          limit(default_per_page).offset(default_per_page * ((num = num.to_i - 1) < 0 ? 0 : num))
         } do
           include Kaminari::MongoidCriteriaMethods
           include Kaminari::PageScopeMethods
+        end
+      end
+
+      module ClassMethods
+        def inherited(kls)
+          super
+          kls.send(:include, Kaminari::MongoidExtension::Document.dup)
         end
       end
     end

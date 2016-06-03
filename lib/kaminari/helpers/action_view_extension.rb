@@ -15,7 +15,9 @@ module Kaminari
     # * <tt>:remote</tt> - Ajax? (false by default)
     # * <tt>:ANY_OTHER_VALUES</tt> - Any other hash key & values would be directly passed into each tag as :locals value.
     def paginate(scope, options = {}, &block)
-      paginator = Kaminari::Helpers::Paginator.new self, options.reverse_merge(:current_page => scope.current_page, :total_pages => scope.total_pages, :per_page => scope.limit_value, :param_name => Kaminari.config.param_name, :remote => false, :theme => Kaminari.config.theme)
+      options[:total_pages] ||= options[:num_pages] || scope.total_pages
+
+      paginator = Kaminari::Helpers::Paginator.new(self, options.reverse_merge(:current_page => scope.current_page, :per_page => scope.limit_value, :remote => false, :theme => Kaminari.config.theme))
       paginator.to_s
     end
 
@@ -86,17 +88,7 @@ module Kaminari
     #   <%= page_entries_info @posts, :entry_name => 'item' %>
     #   #-> Displaying items 6 - 10 of 26 in total
     def page_entries_info(collection, options = {})
-      entry_name = if options[:entry_name]
-        options[:entry_name]
-      elsif collection.is_a?(::Kaminari::PaginatableArray)
-        'entry'
-      else
-        if collection.respond_to? :model  # DataMapper
-          collection.model.model_name.human.downcase
-        else  # AR
-          collection.model_name.human.downcase
-        end
-      end
+      entry_name = options[:entry_name] || collection.entry_name
       entry_name = entry_name.pluralize unless collection.total_count == 1
 
       if collection.total_pages < 2

@@ -13,7 +13,6 @@ module Kaminari
 
       def initialize(template, options) #:nodoc:
         #FIXME for compatibility. remove num_pages at some time in the future
-        options[:total_pages] ||= options[:num_pages]
         options[:num_pages] ||= options[:total_pages]
 
         @window_options = {}.tap do |h|
@@ -25,7 +24,8 @@ module Kaminari
           h[:right] = outer_window if h[:right] == 0
         end
         @template, @options = template, options
-        @theme = @options[:theme] ? "#{@options[:theme]}/" : ''
+        @theme = @options[:theme]
+        @views_prefix = @options[:views_prefix]
         @window_options.merge! @options
         @window_options[:current_page] = @options[:current_page] = PageProxy.new(@window_options, @options[:current_page], nil)
 
@@ -49,8 +49,8 @@ module Kaminari
       def each_relevant_page
         return to_enum(:each_relevant_page) unless block_given?
 
-        relevant_pages(@window_options).each do |i|
-          yield PageProxy.new(@window_options, i, @last)
+        relevant_pages(@window_options).each do |page|
+          yield PageProxy.new(@window_options, page, @last)
         end
       end
       alias each_page each_relevant_page
@@ -105,6 +105,12 @@ module Kaminari
           super @window_options.merge :paginator => self
         end
       end
+
+      # delegates view helper methods to @template
+      def method_missing(name, *args, &block)
+        @template.respond_to?(name) ? @template.send(name, *args, &block) : super
+      end
+      private :method_missing
 
       # Wraps a "page number" and provides some utility methods
       class PageProxy
