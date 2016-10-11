@@ -18,7 +18,10 @@ module Kaminari
         @param_name = @options.delete(:param_name) || Kaminari.config.param_name
         @theme = @options.delete(:theme)
         @views_prefix = @options.delete(:views_prefix)
-        @params = @options[:params] ? template.params.merge(@options.delete :params) : template.params
+        @params = template.params
+        # @params in Rails 5 no longer inherits from Hash
+        @params = @params.to_unsafe_h if @params.respond_to?(:to_unsafe_h)
+        @params = @params.except(:script_name).merge(@options.delete(:params) || {})
       end
 
       def to_s(locals = {}) #:nodoc:

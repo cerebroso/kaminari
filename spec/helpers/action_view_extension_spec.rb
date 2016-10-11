@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'Kaminari::ActionViewExtension', :if => defined?(Rails)do
+describe 'Kaminari::ActionViewExtension', :if => defined?(::Rails::Railtie) do
   describe '#paginate' do
     before do
       50.times {|i| User.create! :name => "user#{i}"}
@@ -176,6 +176,18 @@ describe 'Kaminari::ActionViewExtension', :if => defined?(Rails)do
             subject { helper.page_entries_info @users, :entry_name => 'member', :params => {:controller => 'users', :action => 'index'} }
             it      { should == 'Displaying members <b>26&nbsp;-&nbsp;50</b> of <b>50</b> in total' }
           end
+        end
+
+        describe 'the last page' do
+          before do
+            User.max_pages_per 4
+            @users = User.page(4).per(10)
+          end
+
+          after { User.max_pages_per nil }
+
+          subject { helper.page_entries_info @users, :params => {:controller => 'users', :action => 'index'} }
+          it      { should == 'Displaying users <b>31&nbsp;-&nbsp;40</b> of <b>50</b> in total' }
         end
       end
     end
